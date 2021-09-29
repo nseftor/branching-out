@@ -1,0 +1,520 @@
+---
+title: 'Branching Out: Using Decision Trees to Inform Education Decisions'
+author: "Neil Seftor"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  rmdformats::readthedown:
+  prettydoc::html_pretty:
+    highlight: vignette
+    theme: architect
+  html_document:
+    highlight: breezedark
+    keep_md: yes
+    number_sections: no
+    theme: yeti
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+subtitle: Supplemental Appendix
+always_allow_html: yes
+---
+
+```{r knitrSetup, echo=FALSE, error=FALSE, message=FALSE, warning=FALSE, comment=NA}
+# Set options for knitr
+library(knitr)
+knitr::opts_chunk$set(comment=NA, warning=FALSE, echo=TRUE, cache=TRUE,
+                      error=FALSE, message=FALSE, fig.align='center',
+                      fig.width=8, fig.height=6, dpi = 144, class.output="bg-info")
+options(width=80)
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position=c('top','left'),color='grey')
+```
+
+<style>
+.watermark {
+  opacity: 0.2;
+  position: fixed;
+  top: 40%;
+  left: 43%;
+  font-size: 1000%;
+  color: #db8d18;
+}
+</style>
+<div class="watermark">DRAFT</div>
+
+Data analysts can use this appendix to gain basic knowledge of programming 
+in R and replicate the CART analysis presented through the Eduphonia 
+example in the guide. The grey boxes contain annotated R programming code, 
+and include a button in the upper left corner to copy code. The associated 
+output is presented in blue boxes and figures. 
+
+## CART framework
+
+CART analysis relies on a predictive algorithm that uses a model to 
+identify the relationships between a set of characteristics and an 
+outcome of interest. When conducting a CART analysis, work proceeds in 
+three broad stages—preparing the data, developing the model, and analyzing 
+the results (exhibit 1). This appendix describes each of these stages in 
+detail.
+
+**Exhibit 1. CART analysis processes by stage**<br><br>
+<div style="margin: 0 auto; width:80%;">
+<center><img src="../img/Exhibit 1.png"></center>
+</div><br>
+
+## Software requirements
+
+To replicate the analyses described in this guide, users will need **R** 
+(version 3.6 or above) and **RStudio**, along with a basic understanding 
+of both. Users may need to consult other resources for assistance with 
+the software. **R** is a programming language and free software environment 
+for statistical computing and graphics supported by the R Foundation for 
+Statistical Computing. You can download R from the 
+[Comprehensive R Archive Network (CRAN)](https://cloud.r-project.org/).
+**RStudio** is an integrated development environment for R. 
+You can download it directly from 
+[RStudio](https://rstudio.com/products/rstudio/download/).
+
+Several packages in R implement CART analysis. This example
+uses the `rpart` package, which is included in base R (exhibit 2). 
+The `rpart` package implements CART analysis as described by Breiman and
+colleages (1984). See the *Recursive Partitioning* section 
+of [CRAN Task View: Machine Learning & Statistical Learning](https://cran.r-project.org/web/views/MachineLearning.html) for the
+full list of related packages, as well as detailed helkp pages and vignettes.
+You can also find additional information through the
+`??package`, `?procedure`, and `vignette('package')` commands in R.
+
+**Exhibit 2. Install and load R packages**<br>
+```{r, eval=FALSE}
+# If these packages have not been installed previously, use install.packages() 
+# to install them before loading them for use in your work session.
+install.packages("caret")
+install.packages("rpart")
+install.packages("rpart.plot")
+install.packages("ROCR")
+```
+
+```{r, eval=TRUE}
+# Load the packages.
+library(caret)          # Functions to streamline model training and tuning processes
+library(rpart)          # Implementation of CART analysis algorithm
+library(rpart.plot)     # Procedure to plot the results of rpart
+library(ROCR)           # Tool for creating curves of performance measures
+```
+
+## Stage 1: Prepare the data
+
+**Prepare the data.** In the prepare the data stage, data analysts must 
+obtain data for a prior cohort that contain the set of characteristics 
+and outcome of interest; select data observations and variables to include 
+in the analysis; process the data for use in the analysis, including 
+cleaning the data, dealing with missing values, and transforming or 
+creating new variables; and partition it into training data and testing
+data for use in separate parts of the analysis. 
+
+For demonstration purposes, this analysis uses publicly available data 
+from the U.S. Department of Education’s 
+[Early Childhood Longitudinal Study](https://nces.ed.gov/ecls/), 
+Kindergarten Class of 1998/99 (ECLS-K), as the prior cohort. The ECLS-K 
+data focus on children’s early school experiences. Our analysis sample 
+follows ECLS-K students from kindergarten through middle school, linking 
+data across time. The data are from the National Center for Education
+Statistics 
+[Online Codebook](https://nces.ed.gov/OnlineCodebook/Session/Codebook/6c5af0be-772a-4cb8-9059-4297b831efef),
+which allows for selection of variables and access to documentation. 
+Visit the Inter-university Consortium for Political and Social Research 
+([ICPSR](https://www.icpsr.umich.edu/web/ICPSR/studies/28023)) for additional 
+information. 
+
+The example presented in this appendix uses a dataset that has been 
+cleaned and prepared for this analysis. To prepare the dataset, analysts 
+selected variables of interest from among all of the variables available 
+in the ECLS-K data; examined patterns of missingness in the data; and 
+transformed the continuous outcome variable, a grade 3 mathematics test 
+score, into a dichotomous variable that indicates whether or not each 
+student scored Below Proficient (exhibit 2). 
+
+**Exhibit 2. Variable names and details of ECLS-K data**
+
+| Variable       | Variable details (ECLS-K variable name)                                   |
+|:------         |:-----------------------------------------                                 |
+| `MathARS`      | Fall kindergarten mathematical thinking academic rating scale (T1RARSMA)  |
+| `LiteracyARS`  | Fall kindergarten language and literacy academic rating scale (T1RARSLI)  |
+| `GeneralARS`   | Fall kindergarten general knowledge academic rating scale (T1RARSGE)      |
+| `LetterRecog`  | Fall kindergarten proficiency probability score for letter recognition (C1R4RPB1)   |
+| `BeginSounds`  | Fall kindergarten proficiency probability score for beginning sounds (C1R4RPB2)     |
+| `EndSounds`    | Fall kindergarten proficiency probability score for ending sounds (C1R4RPB3)        |
+| `SightWords`   | Fall kindergarten proficiency probability score for sight words (C1R4RPB4)          |
+| `CountNumShp`  | Fall kindergarten proficiency probability score for count, number, shape (C1R4MPB1) |
+| `RelativeSize` | Fall kindergarten proficiency probability score for relative size (C1R4MPB2)        |
+| `OrdinalSeq`   | Fall kindergarten proficiency probability score for ordinality, sequence (C1R4MPB3) |
+| `AddSubtract`  | Fall kindergarten proficiency probability score for add/subtract (C1R4MPB4)         |
+| `AtRisk`       | Indicator of scoring Below Proficient on state math assessment at the end of grade 3 (C5R4MTSC) |          
+
+Users can access the dataset used in this guide here (exhibit 3). 
+
+**Exhibit 3. Load data and assign variables**<br>
+```{r}
+# Use the load() command to read in the data.
+load("../data/eclsk.rdata")     # Change the file name to access your data file.
+
+# Create a copy of your data in mydata to allow you to use the remaining code more easily.
+mydata <- eclsk         # Change the dataset name to access your data.
+
+# Assign the outcome to depvar, the dependent variable.
+depvar <- "AtRisk"      # Change the dependent variable to your outcome of interest.
+
+# Define the set of independent variables for the analysis.
+indepvar <- c(          # Change the independent variables to your characteristics.
+  "LiteracyARS","MathARS","GeneralARS","LetterRecog","BeginSounds","EndSounds","SightWords",
+  "CountNumShp","RelativeSize","OrdinalSeq","AddSubtract")
+
+# Use dim() to show the dimensions of the data.
+dim(mydata)
+```
+
+After preparing the data and before any analysis takes place, users must 
+partition the data for the prior cohort into training and testing data (exhibit 4). 
+The CART analysis uses training data to train and tune the model in Stage 2 
+and the testing data in Stage 3 to evaluate the predictive accuracy of the 
+final model created with the training data.
+
+**Exhibit 4. Partition the data into training and testing data**<br>
+
+```{r, echo=TRUE}
+# Use set.seed() to set the seed for R's random number generator. This is 
+# useful for creating sets of random numbers in order to reproduce and 
+# replicate analyses. The seed can be set to any value, but you will need 
+# to leave the seed unchanged to replicate the results in this appendix.
+set.seed(101010)
+
+# Use createDataPartition() to randomly select 80% of the data (p=.8), while 
+# maintaining the same proportion of Yes for the outcome (depvar) as in the 
+# full data. This only needs to be done once (times=1) and you do not need 
+# to print each of the observations (list=FALSE). You will need to use 
+# as.vector() to save the results as a vector for the next step.
+train_index <- as.vector(createDataPartition(mydata[[depvar]],p=.8,list=FALSE,times=1))
+
+# Assign the 80% of observations identified above to the training data and 
+# the remaining 20% of observations to the testing data.
+mytrain <- mydata[train_index, ] 
+mytest <- mydata[-train_index, ]
+```
+
+## Stage 2: Develop the model
+
+**Develop the model.** In the develop the model stage, the CART analysis 
+runs an algorithm repeatedly as part of a training and tuning process to 
+identify the optimal model. When training the model, the CART analysis 
+runs the algorithm on the training data to generate a set of decision 
+rules. In tuning the model, the data analyst changes the parameters of 
+the algorithm and trains the model for each set of parameters to identify 
+the optimal model. The CART analysis evaluates the model at multiple 
+points. As the algorithm constructs the decision tree, it considers 
+many possible ways to split the groups. In each step of the process, 
+it identifies all of the possible splits, with each split based on a 
+single variable. The algorithm then uses an internal metric to identify 
+the split that leads to the greatest improvement in the predictive 
+accuracy to identify the best way to split the data. Then the process 
+repeats and the CART analysis again considers many possible ways to 
+split the groups. The CART analysis will consider all of the variables 
+when determining how to split the data. Because it only makes the best 
+of all possible splits, CART may not use all of the variables included 
+in the model in the resulting analysis or the final tree. The tuning 
+process uses a different metric to evaluate the overall fit of the model 
+from each training and select the optimal model. 
+
+To train and tune the CART analysis to determine the optimal model, 
+users will use the `rpart` algorithm in the `caret` package, short 
+for **C**lassification **A**nd **RE**gression **T**raining (exhibit 5).
+
+The first command in the code defines a formula in R to use in each 
+analysis. The formula specifies that the dependent variable (`depvar`) 
+is a function of a set of independent variables (`indepvar`):
+
+-	Kindergarten measures of specific math knowledge (CountNumShp, RelativeSize, OrdinalSeq, and AddSubtract)
+-	Kindergarten measures of language knowledge (LetterRecog, BeginSounds, EndSounds, and SightWords) 
+-	Kindergarten measures of broad knowledge (LiteracyARS, MathARS, and GeneralARS).
+
+The CART analysis uses these independent variables to predict the 
+indicator for scoring Below Proficient on the state math assessment 
+at the end of grade 3 (`AtRisk`), which is specified as the dependent 
+variable (see exhibit 3).
+
+The next section of the code uses the `train` function in `caret` to 
+run `rpart` on the training data. The function `trainControl` is where 
+users specify the parameters for the `train` function:
+
+-	`Method`, `number`, and `repeats` provide specifications for the cross-validation
+-	`savePredictions` tells R to save the results from the analysis for use in the next phase 
+-	`selectionFunction` tells R to use the one standard error rule
+-	`classProbs` and `summaryFunction` provide specifications related the performance measures
+
+The specifications for the `train` function include `tuneLength`, which 
+specifies that the CART analysis should try 10 values of `cp` and `metric`,
+which identifies receiver operating characteristic (`ROC`) as the 
+performance measure to optimize. Therefore, at each of the 10 values 
+of `cp`, the CART analysis runs the training process to find the optimal 
+model and the associated value of the performance `metric`. Then, across 
+all values of `cp`, the CART analysis uses the `selectionFunction` to choose 
+the optimal model.
+
+**Exhibit 5. Train and tune the CART analysis to determine the optimal model**<br>
+
+```{r, echo=TRUE}
+# Set up the formula for the model in which the dependent variable is 
+# a function of the set of independent variables. Use paste() to create 
+# a summation of the variables in indepvar using + between each, and 
+# again to add depvar and the ~ symbol before them. Finally, use 
+# as.formula() to save the combination in myformula.
+myformula <- as.formula(paste(depvar,paste(indepvar,collapse=" + "),sep=" ~ "))
+
+# Use trainControl() to define parameters for train().
+mycontrol <- trainControl(
+  method = "repeatedcv",               # Repeated cross-validation
+  number = 10,                         # Number of folds (k)
+  repeats = 10,                        # Number of repeats (n) of cross-validation
+  savePredictions = "final",           # Save predictions for best tuning parameters
+  classProbs = TRUE,                   # Compute probabilities for each class
+  selectionFunction = "oneSE",         # Select model within one standard error of best
+  summaryFunction = twoClassSummary    # Provide ROC, sensitivity, and specificity
+)
+
+# Use caret's train() function to tune using cp and select using ROC.
+mytree <- train( 
+  myformula,                           # Use the formula defined above
+  data = mytrain,                      # Use the subset of data for training
+  method = "rpart",                    # Use the rpart procedure for CART analysis
+  trControl = mycontrol,               # Use the controls defined above
+  tuneLength = 10,                     # Try 10 values of the complexity parameter (cp)
+  metric = "ROC"                       # Use the ROC as the metric for choosing the model
+)
+
+# Look at the output from the CART analysis.
+mytree
+```
+
+Users can look at the nodes and decision rules of the optimal model (exhibit 6). 
+
+**Exhibit 6. Print the nodes and decision rules from the optimal model**<br>
+
+```{r, echo=TRUE}
+# Print the nodes and decision rules from the optimal model.
+mytree$finalModel 
+```
+
+However, one of the main benefits of CART analysis is the ability to show 
+information graphically (exhibit 7). 
+
+**Exhibit 7. Plot the nodes and decision rules from the optimal model**<br>
+
+```{r, echo=TRUE}
+# Plot the nodes and decision rules from the optimal model.
+rpart.plot(
+  mytree$finalModel,                   # The optimal model from the CART analysis
+  box.palette = "lightblue1",          # Box color
+  type = 0,                            # Draw labels for each split and node
+  leaf.round = 0,                      # Do not use rounded terminal nodes
+  nn = T,                              # Include node numbers
+  branch.col = "lightblue2",           # Color of the branches
+  branch.type = 5,                     # Branch width based on share of students
+  extra = 107,                         # Show % in node at risk and % of all students
+  xflip = T,                           # Flip the tree horizontally
+  under = T,                           # Place overall percentage under leaf
+  cex = 1                              # Size of text
+)
+```
+
+## Stage 3: Analyze the results
+
+**Analyze the results.** When analyzing the results, educators create 
+a set of options derived from the final model, consider the implications 
+of each option, select an option, and then implement the decision using 
+the model on data for the current cohort of students.
+
+In this step, users will assess the predictive accuracy by generating 
+a ROC curve, which plots information about true positive and false 
+positive rates to inform options for educators to consider (exhibit 8). 
+First, using `predict`, the code generates predicted values for each 
+student by applying the rules from the model above. Next, `performance` 
+calculates the true positive and false positive rates in the testing data.
+Finally, the last section of code creates the ROC curve.
+
+**Exhibit 8. Predict probabilities using the model and plot the ROC curve**<br>
+
+```{r, echo=TRUE}
+# Use predict() to predict probabilities of scoring Below Proficient 
+# or not using the model from caret and save the at risk probability 
+# as the prediction.
+pred <- predict(mytree$finalModel,mytest,type="prob")[,2]
+
+# Use prediction() to transform the predictions and actual values 
+# into a format for use by performance(), which calculates the true 
+# positive and false positive rates.
+perf <- performance(prediction(pred,mytest[[depvar]]),"tpr","fpr")
+
+# Use par() to format the plotting area as a square. Then use plot() 
+# to plot the combinations of true positive and false positive rates 
+# and include labels for values of the probability threshold. Finally, 
+# use abline() to include a line for reference. 
+par(pty="s")
+plot(perf,print.cutoffs.at=seq(0,1,by=0.1),text.adj=c(-0.2,1.7),lwd=2)
+abline(0,1,lty=2,lwd=2)
+```
+
+The user can obtain the true positive rates (`tpr`) and false positive 
+rates (`fpr`) from the ROC curve for the probability thresholds (`pth`) 
+that correspond with each of the 10 terminal nodes above (exhibit 9). 
+
+**Exhibit 9. Extract results to inform options**<br>
+
+```{r, echo=TRUE}
+# Extract the x, y, and alpha values from the points along the ROC curve.
+rocpoints <- data.frame(pth=perf@alpha.values[[1]],tpr=perf@y.values[[1]],
+                        fpr=perf@x.values[[1]])
+
+# Print the values of the measures for each point along the ROC curve.
+rocpoints
+```
+
+Next, the user will use the combination of rates from rows of the output
+above to plot the implications of providing the intervention to different 
+groups of students (exhibit 10).
+
+**Exhibit 10. Implications of providing the intervention to different groups of students**
+
+<div style="margin: 0 auto; width:80%;">
+<center><img src="../img/Exhibit 10.png"></center>
+</div><br>
+ 
+Suppose that after reviewing their options, the educators in Eduphonia 
+choose option 8, in which all groups will receive the intervention except 
+the two with the lowest probabilities for scoring Below Proficient on 
+the state assessment at the end of grade 3. The probability threshold 
+(`pth`) associated with that option is 0.385. Based on the final decision, 
+the data analyst can plot the final decision tree for use in implementing 
+the choice (exhibit 11). 
+
+**Exhibit 11. Plot the final decision tree for identifying students for intervention**
+
+```{r, echo=TRUE}
+# Use rpart.plot() to plot the final decision tree using the chosen probability threshold.
+rpart.plot(
+  mytree$finalModel,                        # The optimal model from the CART analysis.
+  box.palette = c("slategray1","green3"),   # Green for intervention, blue for not.
+  pal.thresh = 0.38,                        # Threshold for determining intervention status.
+  type = 0,                                 # Draw labels for each split and node.
+  extra = 7,                                # Show predicted probability for the node.
+  branch.lwd = 5,                           # Width of branches.
+  branch.col = "slategray1",                # Color of the branches.
+  leaf.round = 0,                           # Do not use rounded terminal nodes.
+  xflip = T,                                # Flip the tree horizontally.
+  cex = 1                                   # Size of text.
+)
+```
+
+Every value above this cutoff is colored green to indicate that students 
+will receive the intervention, while every value below the cutoff is 
+colored blue to indicate that students will not receive the intervention. 
+Examining the decision tree in exhibit 11, users can see that the decision 
+rules illustrate that a student will receive the intervention if they have: 
+
+-	a RelativeSize score of less than 0.24, or 
+-	a RelativeSize score between 0.24 and 0.65 and a MathARS score of less than 1.7. 
+
+## Customization
+
+The `rpart` and `caret` packages provide several options for obtaining the 
+optimal model. As data analysts gain more experience with CART and a 
+deeper understanding of the models, they can consider additional ways 
+to customize the training and tuning. This section describes how to 
+create a metric for evaluating and choosing a model and introduces a 
+loss function that can incorporate preferences regarding the relative 
+importance of different types of errors. 
+
+`Caret` allows users to create their own performance measures, which may 
+be useful if their preferences are both quantifiable and not already 
+calculated. For example, maximizing sensitivity (true positive rate) 
+alone would result in choosing a probability threshold of 0 and 
+classifying everyone as a Yes, while minimizing specificity (true negative 
+rate) alone would result in choosing a probability threshold of 1 and 
+classifying everyone as a No. One approach to incorporate both goals 
+is to create a metric based on both, such as adding them together. This 
+moves the optimal selection to the middle of the ROC curve. 
+
+Another customization allows the CART analysis algorithm to change how 
+it considers different types of errors. A loss function imposes a 
+penalty on certain types of errors, increasing the cost of making that 
+error when evaluating decision rules using a performance measure and 
+encouraging the model to avoid them. For example, a penalty of 2 on 
+false negatives means that failing to correctly predict that a student 
+will score Below Proficient on the state math assessment at the end 
+of grade 3 is twice as costly as failing to correctly predict a student 
+will score Proficient or above. 
+
+Putting all the pieces together would involve running the entire 
+training and tuning process for several values of the penalty and using 
+the custom metric defined above to evaluate models (exhibit 12).
+
+**Exhibit 12. CART analysis example with additional customizations**
+
+```{r, echo=TRUE, eval=FALSE}
+# Create a performance metric that is the sum of sensitivity and specificity.
+mymetric <- function(data, lev = levels(data$obs), model = NULL) {
+  out <- c(twoClassSummary(data, lev = levels(data$obs), model = NULL))
+  metric <- out["Spec"] + out["Sens"]
+  c(out, SS = metric)
+}
+
+# Use expand.grid() to create a matrix with penalties ranging from 1 to 8, 
+# along with columns to collect information on the performance metric and 
+# complexity parameter.
+mygrid <- expand.grid(penalty=seq(1,8,1),ss=0,cp=0)
+
+# Use list() to define a place to store all the models.
+models <- list()
+
+# Adjust trainControl() to use the metric above.
+mycontrol <- trainControl(
+  method = "repeatedcv",
+  number = 10,
+  repeats = 10,
+  savePredictions = "final",
+  classProbs = TRUE,
+  summaryFunction = mymetric,
+  selectionFunction = "oneSE"
+)
+
+# There is one row in mygrid for each penalty level. For each penalty level,
+# use train() to run the CART analysis model.
+for (iteration in 1:nrow(mygrid)) {
+ 
+  # Store train() results 
+  models[[iteration]] <- train( 
+    myformula, 
+    data = mytrain, 
+    method = "rpart", 
+    trControl = mycontrol, 
+    tuneLength = 25, 
+    metric = "SS.Spec",
+ 
+    # Use parms to send the loss parameter to rpart, with the current
+    # penalty value for false negatives from this time through the loop.
+    parms = list(loss=matrix(c(0,1,mygrid$penalty[iteration],0),byrow=TRUE,nrow=2))
+  )
+ 
+  # Use which.max() to find the model with the highest metric value.
+  best <- which.max(models[[iteration]]$results$SS.Spec) 
+ 
+  # Store the values of the metric and the tuning parameter, cp.
+  mygrid$ss[iteration] <- models[[iteration]]$results$SS.Spec[best] 
+  mygrid$cp[iteration] <- models[[iteration]]$results$cp[best]
+}
+
+# Use which.max() to select the row with the highest value of the performance
+# metric and then extract the model that generated it.
+mytree <- models[[which.max(mygrid$ss)]]
+```
+
