@@ -3,6 +3,21 @@
 This repository contains a web guide, R code, and sample data to implement 
 the example Classification and Regression Tree (CART) analysis described 
 in [Branching Out: Using Decision Trees to Inform Education Decisions](https://ies.ed.gov/ncee/edlabs/projects/project.asp?projectID=6689).
+
+Classification and Regression Tree (CART) analysis is a statistical modeling 
+approach that uses quantitative data to predict future outcomes for current 
+students. Educators can use results from CART analyses to identify students 
+who are most likely to benefit from additional support early—in the months 
+and years before problems fully materialize. The guide introduces CART 
+analysis as an approach that allows data analysts to generate actionable 
+analytic results that can inform educators’ decisions about the allocation 
+of extra supports for students. Data analysts with intermediate statistical 
+software programming experience can use the guide to learn how to conduct a 
+CART analysis and support research directors in local and state education 
+agencies and other educators in applying the results. Research directors 
+can use the guide to learn how results of CART analysis can inform education 
+decisions.
+
 The code in this repository is based on code from Appendix A of the guide.
 This repository is organized in the following folder structure:
 
