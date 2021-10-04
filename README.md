@@ -25,4 +25,10 @@ This repository is organized in the following folder structure:
 - `data` contains data necessary to complete the analysis
 - `img` contains images for use in the guide
 
-These materials were originally authored by Neil Seftor for REL Appalachia.
+These materials were originally authored by Neil Seftor for REL Appalachia. 
+These materials were prepared for the Institute of Education Sciences (IES) 
+under Contract ED-IES-C-0004 by Regional Educational Laboratory Appalachia 
+administered by SRI International. The content does not necessarily reflect 
+the views or policies of IES or the U.S. Department of Education nor does 
+mention of trade names, commercial products, or organizations imply 
+endorsement by the U.S. Government.
