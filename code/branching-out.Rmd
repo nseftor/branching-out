@@ -124,8 +124,7 @@ data across time. The data are from the National Center for Education
 Statistics 
 [Online Codebook](https://nces.ed.gov/OnlineCodebook/Session/Codebook/6c5af0be-772a-4cb8-9059-4297b831efef),
 which allows for selection of variables and access to documentation. 
-Visit the Inter-university Consortium for Political and Social Research 
-([ICPSR](https://www.icpsr.umich.edu/web/ICPSR/studies/28023)) for additional 
+Visit the [Inter-university Consortium for Political and Social Research](https://www.icpsr.umich.edu/web/ICPSR/studies/28023) for additional 
 information. 
 
 The example presented in this appendix uses a dataset that has been 
@@ -177,8 +176,8 @@ dim(mydata)
 
 After preparing the data and before any analysis takes place, users must 
 partition the data for the prior cohort into training and testing data (exhibit 4). 
-The CART analysis uses training data to train and tune the model in Stage 2 
-and the testing data in Stage 3 to evaluate the predictive accuracy of the 
+The CART analysis uses training data to train and tune the model in stage 2 
+and the testing data in stage 3 to evaluate the predictive accuracy of the 
 final model created with the training data.
 
 **Exhibit 4. Partition the data into training and testing data**<br>
@@ -228,7 +227,7 @@ from each training and select the optimal model.
 
 To train and tune the CART analysis to determine the optimal model, 
 users will use the `rpart` algorithm in the `caret` package, short 
-for **C**lassification **A**nd **RE**gression **T**raining (exhibit 5).
+for **C**lassification **a**nd **Re**gression **T**raining (exhibit 5).
 
 The first command in the code defines a formula in R to use in each 
 analysis. The formula specifies that the dependent variable (`depvar`) 
@@ -240,7 +239,7 @@ is a function of a set of independent variables (`indepvar`):
 
 The CART analysis uses these independent variables to predict the 
 indicator for scoring Below Proficient on the state math assessment 
-at the end of grade 3 (`AtRisk`), which is specified as the dependent 
+at the end of grade 3 (AtRisk), which is specified as the dependent 
 variable (see exhibit 3).
 
 The next section of the code uses the `train` function in `caret` to 
@@ -250,10 +249,10 @@ users specify the parameters for the `train` function:
 -	`Method`, `number`, and `repeats` provide specifications for the cross-validation
 -	`savePredictions` tells R to save the results from the analysis for use in the next phase 
 -	`selectionFunction` tells R to use the one standard error rule
--	`classProbs` and `summaryFunction` provide specifications related the performance measures
+-	`classProbs` and `summaryFunction` provide specifications related to the performance measures
 
 The specifications for the `train` function include `tuneLength`, which 
-specifies that the CART analysis should try 10 values of `cp` and `metric`,
+specifies that the CART analysis should try 10 values of `cp`, and `metric`,
 which identifies receiver operating characteristic (`ROC`) as the 
 performance measure to optimize. Therefore, at each of the 10 values 
 of `cp`, the CART analysis runs the training process to find the optimal 
@@ -380,7 +379,7 @@ rocpoints
 ```
 
 Next, the user will use the combination of rates from rows of the output
-above to plot the implications of providing the intervention to different 
+above to determine the implications of providing the intervention to different 
 groups of students (exhibit 10).
 
 **Exhibit 10. Implications of providing the intervention to different groups of students**
@@ -416,8 +415,8 @@ rpart.plot(
 ```
 
 Every value above this cutoff is colored green to indicate that students 
-will receive the intervention, while every value below the cutoff is 
-colored blue to indicate that students will not receive the intervention. 
+who will receive the intervention, while every value below the cutoff is 
+colored blue to indicate that students who will not receive the intervention. 
 Examining the decision tree in exhibit 11, users can see that the decision 
 rules illustrate that a student will receive the intervention if they have: 
 
